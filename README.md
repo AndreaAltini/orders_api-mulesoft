@@ -71,10 +71,7 @@ Edit `global.xml` -> `global elements` -> `database config` with your database c
 
 2. Encrypt your credentials:
 ```bash
-java -cp mule-secure-configuration-property-module-1.2.5.jar \
-  com.mulesoft.modules.configuration.internal.util.EncryptionTool \
-  -m "yourMasterPassword" \
-  -v "yourValueToEncrypt"
+java -cp secure-properties-tool.jar com.mulesoft.tools.SecurePropertiesTool string encrypt Blowfish CBC YourMuleSoftKey "myPassword"
 ```
 
 3. Insert encrypted values in `local.secure.properties`
