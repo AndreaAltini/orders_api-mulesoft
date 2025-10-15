@@ -19,7 +19,6 @@ Educational project for **MuleSoft Developer Certification** preparation.
 - [API Endpoints](#api-endpoints)
 - [Testing](#testing)
 - [Project Structure](#project-structure)
-- [Security](#security)
 
 ---
 
@@ -95,12 +94,12 @@ Configure these variables to run the project:
 
 | Variable | Description | Example |
 |-----------|-------------|---------|
-| `SECURE_KEY` | Master password for decryption | `mySecretKey123` |
-| `env` | Environment (local/dev/prod) | `local` |
+| `secure.key` | Decryption key | `mySecretKey123` |
+| `env` | Environment (local/dev) | `local` |
 
 ---
 
-## 🗄️ Database
+## Database
 
 ### Schema
 ```
@@ -226,12 +225,12 @@ Update order status.
 
 ### Included Tests
 
-- ✅ GET /orders (success + empty results)
-- ✅ GET /orders/{id} (success + not found)
-- ✅ POST /orders (success + customer not found + product not found)
-- ✅ PATCH /orders/{id}/status (success + not found)
-- ✅ Database error scenarios
-- ✅ Correlation ID generation
+- GET /orders (success + empty results)
+- GET /orders/{id} (success + not found)
+- POST /orders (success + customer not found + product not found)
+- PATCH /orders/{id}/status (success + not found)
+- Database error scenarios
+- Correlation ID generation
 
 **Test Coverage:** ~80%
 - Business logic flows: 100%
@@ -239,7 +238,7 @@ Update order status.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 ```
 orders-api/
 ├── src/
@@ -278,17 +277,17 @@ orders-api/
 ## Learning Outcomes
 
 This project demonstrates:
-- ✅ RESTful API design with RAML
-- ✅ MuleSoft flow architecture (separation of concerns)
-- ✅ Database integration with validation
-- ✅ Error handling strategies
-- ✅ Secure configuration management
-- ✅ Comprehensive unit testing with MUnit
-- ✅ Logging best practices (Correlation ID)
-- ✅ DataWeave transformations
+- RESTful API design with RAML
+- MuleSoft flow architecture (separation of concerns)
+- Database integration with validation
+- Error handling strategies
+- Secure configuration management
+- Comprehensive unit testing with MUnit
+- Logging best practices (Correlation ID)
+- DataWeave transformations
 
 ---
 
-## 📄 License
+## License
 
 This project is released under the MIT License.
