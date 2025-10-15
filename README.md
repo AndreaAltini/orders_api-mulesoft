@@ -1,83 +1,294 @@
-# orders_api-MuleSoft
+# Orders API - MuleSoft Project
 
-**Author:** Andrea Altini - Junior Mulesoft Developer  
+REST API for e-commerce order management built with **MuleSoft Anypoint Studio**.  
+Educational project for **MuleSoft Developer Certification** preparation.
+
+**Author:** Andrea Altini - Junior MuleSoft Developer  
 **Email:** andrea.altini.3d@gmail.com  
-**Location:** Torino, Italy  
+**Location:** Torino, Italy
 
 ---
 
-## Overview
+## Table of Contents
 
-`orders_api` is a MuleSoft application that provides CRUD operations for managing orders. It is implemented using **Mule 4**, **APIkit Router**, and **MUnit tests** to ensure robust functionality and high test coverage.
-
-The project is designed as a portfolio-ready example, demonstrating:
-
-- API implementation using RAML specifications (via MuleSoft Exchange dependency)
-- Modular flow design with separated logic
-- Full error handling
-- Unit tests covering both success and error scenarios
+- [Features](#features)
+- [Technologies](#technologies)
+- [Project Setup](#project-setup)
+- [Configuration](#configuration)
+- [Database](#database)
+- [API Endpoints](#api-endpoints)
+- [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Security](#security)
 
 ---
 
-## Project Structure
+## Features
 
-| File | Description |
-|------|-------------|
-| `orders_api.xml` | Auto-generated APIkit flows connecting the API endpoints to logic flows. Contains: <br>- `orders_api-main` → sets `correlationId`, logs request info, calls APIkit router <br>- `orders_api-console` → console support flow <br>- `get:\orders:orders_api-config` <br>- `get:\orders\(id):orders_api-config` <br>- `post:\orders:application\json:orders_api-config` <br>- `patch:\orders\(id)\status:application\json:orders_api-config` |
-| `flows.xml` | Core business logic flows: <br>- `LOGIC_GET-ORDERS` → returns all orders or filtered by query params (limit, offset, cname, status) <br>- `LOGIC_GET-ORDERS-BY-ID` → returns order by ID <br>- `LOGIC_POST-ORDER` → inserts a new order with validations <br>- `LOGIC_PATCH-ORDER-STATUS` → updates order status by ID |
-| `global.xml` | Global configurations for HTTP Listener, Database, and Secure Properties |
-| `orders-api-test-suite.xml` | MUnit test suite covering both successful scenarios and error cases (DB errors, not found, invalid IDs, etc.) |
+- CRUD operations for orders with automatic rollback
+- Data validation
+- Pagination and filters
+- Structured error handling
+- Logging with Correlation ID
+- Secure properties (encrypted credentials)
+- Complete MUnit tests
+- RAML-first design
 
-**Configuration files:**  
-`local.properties`, `dev.properties`, `local.secure.properties`, `dev.secure.properties` (contain database credentials and environment-specific settings).
+---
+
+## Technologies
+
+- **MuleSoft Anypoint Studio** (version 7.22)
+- **MySQL 8.0+**
+- **APIKit** for REST routing
+- **DataWeave 2.0** for transformations
+- **MUnit 3.6.x** for testing
+- **Secure Configuration Properties** for security
+
+---
+
+## Project Setup
+
+### 1. Clone the repository
+
+### 2. Import into Anypoint Studio
+
+### 3. Database Setup
+import `database/setup.sql` into your MySQL client.
+
+### 4. Configure Properties
+
+#### **Option A: Plain credentials (Fast Option)**
+
+Edit `global.xml` -> `global elements` -> `database config` with your database credential (user/pw).
+
+#### **Option B: Encrypted credentials**
+
+1. Install the encryption tool:
+```bash
+# Download JAR from MuleSoft
+# https://docs.mulesoft.com/mule-runtime/latest/secure-configuration-properties
+```
+
+2. Encrypt your credentials:
+```bash
+java -cp mule-secure-configuration-property-module-1.2.5.jar \
+  com.mulesoft.modules.configuration.internal.util.EncryptionTool \
+  -m "yourMasterPassword" \
+  -v "yourValueToEncrypt"
+```
+
+3. Insert encrypted values in `local.secure.properties`
+
+4. Configure **secure.key** at runtime:
+   - `Run Configurations` → `Environment`
+   - Add new variable:
+     secure.key = **YourEncryptionKey**
+
+---
+
+## Configuration
+
+### Environment Variables
+
+Configure these variables to run the project:
+
+| Variable | Description | Example |
+|-----------|-------------|---------|
+| `SECURE_KEY` | Master password for decryption | `mySecretKey123` |
+| `env` | Environment (local/dev/prod) | `local` |
+
+---
+
+## 🗄️ Database
+
+### Schema
+```
+customers
+├── id (PK)
+├── first_name
+├── last_name
+└── email
+
+products
+├── id (PK)
+├── name
+├── category
+└── unit_price
+
+orders
+├── id (PK)
+├── customer_id (FK)
+├── status
+├── order_date
+└── total_amount
+
+order_details
+├── id (PK)
+├── order_id (FK)
+├── product_id (FK)
+├── quantity
+└── unit_price
+```
 
 ---
 
 ## API Endpoints
 
-The following endpoints are available via the APIkit Router:
+Base URI: `http://localhost:8082/api`
 
-- `GET /orders` → Retrieve all orders (supports pagination and filters)
-- `GET /orders/{id}` → Retrieve a single order by ID
-- `POST /orders` → Create a new order
-- `PATCH /orders/{id}/status` → Update the status of an order
+### GET /orders
 
-Each endpoint delegates the request to the corresponding logic flow in `flows.xml`.
+List orders with pagination and filters.
+
+**Query Parameters:**
+- `limit` (optional): Number of results (default: 10, max: 100)
+- `offset` (optional): Pagination offset (default: 0, min: 0)
+- `cname` (optional): Filter by customer name
+- `status` (optional): Filter by status (processing/confirmed/shipped/delivered)
+
+**Response 200:**
+```json
+{
+  "orders": [...],
+  "pagination": {
+    "totalOrders": 100,
+    "currentPage": 1,
+    "totalPages": 10,
+    "limit": 10
+  }
+}
+```
+
+### GET /orders/{id}
+
+Retrieve specific order details.
+
+**Response 200:**
+```json
+{
+  "id": 1,
+  "status": "shipped",
+  "orderDate": "2025-09-01T10:30:00Z",
+  "customer": {...},
+  "products": [...],
+  "totalAmount": 299.99
+}
+```
+
+**Response 404:** Order not found
+
+### POST /orders
+
+Create a new order.
+
+**Request Body:**
+```json
+{
+  "customerId": 1,
+  "products": [
+    {
+      "productId": 1,
+      "quantity": 2
+    }
+  ]
+}
+```
+
+**Response 201:** Order created (returns complete order)
+
+**Response 400:** 
+- Customer not found
+- Product does not exist
+
+### PATCH /orders/{id}/status
+
+Update order status.
+
+**Request Body:**
+```json
+{
+  "status": "shipped"
+}
+```
+
+**Response 204:**
+
+**Response 404:** Order not found
 
 ---
 
-## MUnit Test Coverage
+## Testing
 
-The project includes extensive MUnit tests covering both positive and negative scenarios:
+### Run MUnit tests
 
-| Test Flow | Description |
-|-----------|-------------|
-| `get-orders-success` | Retrieves a non-empty list of orders |
-| `get-orders-empty` | Retrieves an empty list |
-| `get-orders-empty-error-db` | Simulates a DB error for GET /orders |
-| `get-order-by-id-success` | Retrieves an order by ID |
-| `get-order-by-id-not-found` | ID not found error scenario |
-| `get-order-by-id-error-db` | Simulates a DB error for GET /orders/{id} |
-| `post-order-success` | Creates a new order |
-| `post-order-customer-not-found` | Error scenario: customer ID not found |
-| `post-order-product-not-found` | Error scenario: product ID not found |
-| `post-order-error-insert` | Simulates DB insert error |
-| `patch-order-status-success` | Updates order status successfully |
-| `patch-order-status-id-not-found` | Error scenario: ID not found |
-| `orders-api-main-correlationId-success` | Verifies `correlationId` is set and logged |
+1. If you are using the Encrypted Database Credential Option, be sure to set the secure.key variable at runtime even for the MUnit tests.
 
-**Test Coverage:**  
-- Logic flows: 100% (including all error scenarios)  
-- APIkit router flow: ~50% (not fully tested, intentionally mocked)  
-- Overall estimated coverage: ~70%
+### Included Tests
+
+- ✅ GET /orders (success + empty results)
+- ✅ GET /orders/{id} (success + not found)
+- ✅ POST /orders (success + customer not found + product not found)
+- ✅ PATCH /orders/{id}/status (success + not found)
+- ✅ Database error scenarios
+- ✅ Correlation ID generation
+
+**Test Coverage:** ~80%
+- Business logic flows: 100%
+- APIKit router: Not tested (framework code)
 
 ---
 
-## Setup Instructions
+## 📁 Project Structure
+```
+orders-api/
+├── src/
+│   ├── main/
+│   │   ├── mule/
+│   │   │   ├── global.xml              # Global configurations
+│   │   │   ├── orders_api.xml          # APIKit router
+│   │   │   └── flows.xml               # Business logic flows
+│   │   └── resources/
+│   │       ├── api/
+│   │       │   └── orders_api.raml     # API specification
+│   │       ├── examples/               # JSON examples
+│   │       ├── local.properties        # Local config
+│   │       └── local.secure.properties # Encrypted credentials
+│   └── test/
+│       └── munit/
+│           └── orders-api-test-suite.xml
+├── database/
+│   └── setup.sql                       # Database script
+├── .gitignore
+├── pom.xml
+└── README.md
+```
 
-1. **Clone the repository:**
+### Key Files
 
-```bash
-git clone https://github.com/your-username/orders_api.git
-cd orders_api
+| File | Description |
+|------|-------------|
+| `orders_api.xml` | APIKit router and endpoint flows |
+| `flows.xml` | Business logic: <br>- `LOGIC_GET-ORDERS` → List/filter orders <br>- `LOGIC_GET-ORDERS-ID` → Get order by ID <br>- `LOGIC_POST-ORDER` → Create order with validations <br>- `LOGIC_PATCH-ORDER-STATUS` → Update status |
+| `global.xml` | HTTP Listener, Database, Secure Properties configs |
+| `orders-api-test-suite.xml` | MUnit tests (success + error scenarios) |
 
+---
+
+## Learning Outcomes
+
+This project demonstrates:
+- ✅ RESTful API design with RAML
+- ✅ MuleSoft flow architecture (separation of concerns)
+- ✅ Database integration with validation
+- ✅ Error handling strategies
+- ✅ Secure configuration management
+- ✅ Comprehensive unit testing with MUnit
+- ✅ Logging best practices (Correlation ID)
+- ✅ DataWeave transformations
+
+---
+
+## 📄 License
+
+This project is released under the MIT License.
