@@ -9,7 +9,7 @@ Educational project for **MuleSoft Developer Certification** preparation.
 
 ---
 
-## Table of Contents
+## Index
 
 - [Features](#features)
 - [Technologies](#technologies)
