@@ -218,6 +218,8 @@ orders-api/
 │   │       │   └── orders_api.raml     # API specification
 │   │       ├── examples/               # JSON examples
 │   │       ├── local.properties        # Local config
+│   │       ├── dev.properties          # Dev config
+│   │       ├── dev.secure.properties   # Encrypted credentials
 │   │       └── local.secure.properties # Encrypted credentials
 │   └── test/
 │       └── munit/
