@@ -91,7 +91,7 @@ Configure these variables to run the project:
 
 | Variable | Description | Example |
 |-----------|-------------|---------|
-| `secure.key` | Decryption key | `mySecretKey123` |
+| `secure.key` | Decryption key | `MyMuleSoftKey` |
 | `env` | Environment (local/dev) | `local` |
 
 ---
