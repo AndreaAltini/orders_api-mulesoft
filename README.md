@@ -4,8 +4,8 @@ REST API for e-commerce order management built with **MuleSoft Anypoint Studio**
 Educational project for **MuleSoft Developer Certification** preparation.
 
 **Author:** Andrea Altini - Junior MuleSoft Developer  
-**Email:** andrea.altini.3d@gmail.com  
-**Location:** Turin, Italy
+**Contact:** Use the "Contact me" button on my [GitHub profile](https://github.com/AndreaAltini)
+
 
 ---
 
@@ -37,11 +37,9 @@ Educational project for **MuleSoft Developer Certification** preparation.
 ## Technologies
 
 - **MuleSoft Anypoint Studio** (version 7.22)
+- **DataWeave 2.0**
+- **MUnit 3.6.x**
 - **MySQL 8.0+**
-- **APIKit** for REST routing
-- **DataWeave 2.0** for transformations
-- **MUnit 3.6.x** for testing
-- **Secure Configuration Properties** for security
 
 ---
 
