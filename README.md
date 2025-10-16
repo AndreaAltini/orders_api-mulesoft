@@ -223,8 +223,9 @@ orders-api/
 │       └── munit/
 │           └── orders-api-test-suite.xml
 ├── database/
-│   └── setup.sql                       # Database script
+│   └── shop.sql                         # Database script
 ├── .gitignore
+├── mule-artifact.json                   # Project artifact metadata
 ├── pom.xml
 └── README.md
 ```
@@ -237,6 +238,8 @@ orders-api/
 | `flows.xml` | Business logic: <br>- `LOGIC_GET-ORDERS` → List/filter orders <br>- `LOGIC_GET-ORDERS-ID` → Get order by ID <br>- `LOGIC_POST-ORDER` → Create order with validations <br>- `LOGIC_PATCH-ORDER-STATUS` → Update status |
 | `global.xml` | HTTP Listener, Database, Secure Properties configs |
 | `orders-api-test-suite.xml` | MUnit tests (success + error scenarios) |
+| `.properties/.secure.properties` | Configuration files for database and environment |
+| `database/shop.sql` | SQL script to initialize database |
 
 ---
 
