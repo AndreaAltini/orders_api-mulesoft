@@ -5,7 +5,7 @@ Educational project for **MuleSoft Developer Certification** preparation.
 
 **Author:** Andrea Altini - Junior MuleSoft Developer  
 **Email:** andrea.altini.3d@gmail.com  
-**Location:** Torino, Italy
+**Location:** Turin, Italy
 
 ---
 
