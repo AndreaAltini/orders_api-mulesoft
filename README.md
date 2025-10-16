@@ -46,14 +46,12 @@ Educational project for **MuleSoft Developer Certification** preparation.
 
 ## Project Setup
 
-### 1. Clone the repository
+### 1. Import into Anypoint Studio
 
-### 2. Import into Anypoint Studio
-
-### 3. Database Setup
+### 2. Database Setup
 Import `database/setup.sql` into your MySQL client.
 
-### 4. Configure Properties
+### 3. Configure Properties
 
 This project uses `.properties` and `.secure.properties` files to externalize configuration values — such as database credentials — for demonstration and educational purposes.  
 However, for simplicity and faster setup, you can skip editing these files and directly update the database connection configuration in **Anypoint Studio**:
