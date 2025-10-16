@@ -4,7 +4,8 @@ REST API for e-commerce order management built with **MuleSoft Anypoint Studio**
 Educational project for **MuleSoft Developer Certification** preparation.
 
 **Author:** Andrea Altini - Junior MuleSoft Developer  
-**Contact:** Use the "Contact me" button on my [GitHub profile](https://github.com/AndreaAltini)
+**Contact:** [LinkedIn-AndreaAltini](https://www.linkedin.com/in/andrea-altini/)
+> Feel free to reach out via LinkedIn for work opportunities.
 
 
 ---
