@@ -223,9 +223,9 @@ orders-api/
 │       └── munit/
 │           └── orders-api-test-suite.xml
 ├── database/
-│   └── shop.sql                         # Database script
+│   └── shop.sql                        # Database script
 ├── .gitignore
-├── mule-artifact.json                   # Project artifact metadata
+├── mule-artifact.json                  # Project artifact metadata
 ├── pom.xml
 └── README.md
 ```
