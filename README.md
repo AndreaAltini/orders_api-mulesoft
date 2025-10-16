@@ -216,9 +216,7 @@ Update order status.
 
 ## Testing
 
-### Run MUnit tests
-
-1. If you are using the Encrypted Database Credential Option, be sure to set the secure.key variable at runtime even for the MUnit tests.
+If you are using the Encrypted Database Credential Option, be sure to set the secure.key variable at runtime even for the MUnit tests.
 
 ### Included Tests
 
