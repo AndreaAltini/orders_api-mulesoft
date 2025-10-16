@@ -1,0 +1,28 @@
+# Java defaults
+*.class
+*.jar
+*.war
+*.ear
+
+# Eclipse / Anypoint Studio
+.metadata/
+bin/
+tmp/
+.settings/
+.project
+.classpath
+.externalToolBuilders/
+*.launch
+.cproject
+
+# Studio / Mule-specific
+target/
+.mule/
+velocity.log
+.DS_Store
+
+# Temp Files / backup
+*.tmp
+*.bak
+*.swp
+*~.nib

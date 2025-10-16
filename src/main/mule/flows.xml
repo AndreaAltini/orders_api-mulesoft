@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<flow name="LOGIC_GET-ORDERS" doc:id="0c9a461a-f45d-4fb4-9850-0d634f714627">
+		<set-variable value="#[attributes.queryParams]" doc:name="queryParams" doc:id="4d081732-8a5c-4519-80e1-2a72a414a94a" variableName="queryParams" />
+		<db:select doc:name="ORDERS" doc:id="e07d3234-3287-4ae2-86f4-360fad8c4f9b" config-ref="Database_Config">
+			<db:sql><![CDATA[SELECT
+    o.id AS order_id,
+    o.status,
+    o.order_date,
+    o.customer_id,
+    c.first_name AS customer_first_name,
+    c.last_name AS customer_last_name,
+    c.email AS customer_email,
+    od.product_id,
+    od.quantity,
+    od.unit_price,
+    p.name AS product_name,
+    p.category,
+    p.unit_price AS product_unit_price
+FROM (
+    SELECT DISTINCT o.id, o.status, o.order_date, o.customer_id
+    FROM orders o
+    JOIN customers c ON o.customer_id = c.id
+    WHERE (:cname IS NULL OR c.first_name = :cname) AND (:status IS NULL OR o.status = :status)
+    LIMIT :offset, :limit
+) AS o
+JOIN customers c ON o.customer_id = c.id
+JOIN order_details od ON o.id = od.order_id
+JOIN products p ON od.product_id = p.id;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	cname: vars.queryParams.cname default null,
+	offset: (vars.queryParams.offset default 0) as Number,
+	limit: (vars.queryParams.limit default 10) as Number,
+	status: vars.queryParams.status default null
+}]]]></db:input-parameters>
+		</db:select>
+		<db:select doc:name="TOTAL_ORDERS" doc:id="22bc855a-63cf-403e-8daf-ee9c2ebb3f70" config-ref="Database_Config" target="totalOrders">
+			<db:sql><![CDATA[SELECT COUNT(*) AS total_orders
+FROM orders
+WHERE (:cname IS NULL OR customer_id IN (SELECT id FROM customers WHERE first_name = :cname)) AND (:status IS NULL OR status = :status);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	cname: vars.queryParams.cname default null,
+	status: vars.queryParams.status default null
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="83b2c430-aa38-41b6-bbc0-4d804726eaef">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+
+var totalOrders = vars.totalOrders[0].total_orders
+var limit = (vars.queryParams.limit default 10) as Number
+var offset = (vars.queryParams.offset default 0) as Number
+var groupedByOrder = payload groupBy $.order_id
+
+---
+{
+	"orders": groupedByOrder pluck (
+		{
+			"id": $$,
+			"status": $[0].status,
+			"orderDate": $[0].order_date,
+	    	"customer": {
+	    		"id": $[0].customer_id,
+	    		"firstName": $[0].customer_first_name,
+	    		"lastName": $[0].customer_last_name,
+	      		"email": $[0].customer_email
+	    	},
+	    	"products": $ map {
+	    		"id": $.product_id,
+	      		"name": $.product_name,
+	      		"quantity": $.quantity,
+	      		"unitPrice": $.unit_price
+	    	},
+	    	"totalAmount": sum($ map ($.quantity * $.unit_price))
+		}
+	),
+	"pagination": {
+		"totalOrders": totalOrders,
+    	"currentPage": (offset / limit) + 1,
+    	"totalPages": ceil(totalOrders / limit),
+    	"limit": limit
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="45ec75ef-4d86-484e-9cd6-f9989450e4b2" type="DB:*">
+				<set-payload value='#[output application/json ---&#10;{&#10;	"error": "Failed to get order. Please try again."&#10;}]' doc:name="Set Payload" doc:id="915ef35b-9554-485b-b209-8801b0db046e" />
+			</on-error-propagate>
+		</error-handler>
+	
+</flow>
+	<flow name="LOGIC_GET-ORDERS-BY-ID" doc:id="3af879e5-ec20-45c9-88f2-1d0709b9cfe9">
+		<set-variable value="#[attributes.uriParams.id default vars.orderId default null]" doc:name="orderId" doc:id="822534f5-40e6-4a9e-9ea6-32ab4e7ccca3" variableName="orderId"/>
+		<db:select doc:name="ORDER BY ID" doc:id="e09c7ad4-f2b5-4372-ad94-56b798f71b36" config-ref="Database_Config" target="orderById">
+			<db:sql><![CDATA[SELECT
+    o.id AS order_id,
+    o.status,
+    o.order_date,
+    o.customer_id,
+    c.first_name AS customer_first_name,
+    c.last_name AS customer_last_name,
+    c.email AS customer_email,
+    od.product_id,
+    od.quantity,
+    od.unit_price,
+    p.name AS product_name,
+    p.category,
+    p.unit_price AS product_unit_price
+FROM orders AS o
+JOIN customers c ON o.customer_id = c.id
+JOIN order_details od ON o.id = od.order_id
+JOIN products p ON od.product_id = p.id
+WHERE (o.id = :orderId);]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	"orderId": vars.orderId as String
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="ID validation" doc:id="19ae1117-9ed8-4389-b4e4-cbbe043973e4">
+			<when expression="#[vars.orderById == []]">
+				<raise-error doc:name="Raise error" doc:id="c91d1837-82c3-4c3c-9305-5a6c8a163794" type="CUSTOM:BAD_ID" description="Id not found" />
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Transform Message" doc:id="af551838-2622-4eef-99f5-fc3de497c586">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var order = vars.orderById
+---
+{
+	"id": order.order_id[0],
+  	"status": order.status[0],
+  	"orderDate": order.order_date[0],
+  	"customer": {
+    	"id": order.customer_id[0],
+    	"firstName": order.customer_first_name[0],
+    	"lastName": order.customer_last_name[0],
+    	"email": order.customer_email[0]
+  	},
+	"products": order map {
+		"id": $.product_id,
+	    "name": $.product_name,
+	    "quantity": $.quantity,
+	    "unitPrice": $.unit_price
+		},
+	"totalAmount": sum(order map ($.quantity * $.unit_price))
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="e028482b-5ff2-4c7f-b432-e3724c47a34b" type="CUSTOM:BAD_ID">
+				<logger level="INFO" doc:name="ERROR_DATA" doc:id="43d62719-1eab-4119-b7f2-300c3281658b" message='#[output application/java ---&#10;"\n[" ++ vars.correlationId as String ++ "] \n" ++ write(&#10;{&#10;  "error": error.description,&#10;  "requestedId": attributes.uriParams.id as Number&#10;}, "application/json")]' />
+				<set-payload value='#[output application/json --- &#10;{&#10;	"error": error.description,&#10;	"requestedId": attributes.uriParams.id as Number&#10;}]' doc:name="Set Payload" doc:id="7bcd2aef-dcdb-4ce5-b1f4-e0c6ae5bf3df" />
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c8df3957-055b-4999-9e4b-909305035d5d" type="DB:*">
+				<logger level="INFO" doc:name="PAYLOAD" doc:id="db2b83db-88e9-4400-9b9e-554743e8397b" message='#[output application/java --- "\n[" ++ vars.correlationId as String ++ "]\n" ++ write(payload, "application/json")]' />
+				<set-payload value='#[output application/json ---&#10;{&#10;	"error": "Failed to get order. Please try again."&#10;}]' doc:name="Set Payload" doc:id="69279ffb-fd93-4b57-93b9-0062e73fd2ff" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="LOGIC_POST-ORDER" doc:id="99bd1d10-91c2-465d-901b-f4a116d4829d" >
+		<try doc:name="Try_ClientExists" doc:id="1f5c152a-7981-4b8c-9355-133f2129d1ed" >
+			<db:select doc:name="CUSTOMER_ID" doc:id="1a214f79-4e46-4934-a43c-e7c11dd6bb19" config-ref="Database_Config" target="clientID">
+			<db:sql><![CDATA[SELECT id FROM customers WHERE id = :customer_id;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	"customer_id": payload.customerId as Number
+}]]]></db:input-parameters>
+		</db:select>
+			<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="fc3c8bbf-2a87-49c8-9391-3f370a912488" values="#[vars.clientID]"/>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7186ddd8-e0a5-4847-bde2-d540b4ef5ccd" type="VALIDATION:EMPTY_COLLECTION">
+					<logger level="INFO" doc:name="PAYLOAD AND QUERY" doc:id="e8e5e5d7-e2d2-47ee-bc49-4d915bf9800d" message='#[output application/java ---&#10;"\n[" ++ vars.correlationId as String ++ "] \n" ++ write(&#10;{&#10;	"payload": payload,&#10;	"queryResult": vars.clientId&#10;}, "application/json")]' />
+					<set-payload value='#[output application/json --- {"error": "Customer not found"}]' doc:name="Set Payload" doc:id="d4c92890-fba0-4c53-9996-20428343c366" />
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="SQL query builder" doc:id="a3161f90-af74-4a8e-8b8d-6400531ad010">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="sql"><![CDATA[%dw 2.0
+output application/java
+---
+"SELECT id AS productId, unit_price AS unitPrice FROM products WHERE id IN (" ++ ((payload.products default []) map ((p) -> p.productId) joinBy ",") ++ ");"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<try doc:name="Try_ProductsExist" doc:id="68abb3cc-0a79-4106-beaf-9c5d82905df5" >
+			<db:select doc:name="PRODUCT _ID" doc:id="8b5f2490-48ca-416b-9e61-8b1463385ba7" config-ref="Database_Config" target="productsList">
+				<db:sql><![CDATA[#[vars.sql]]]></db:sql>
+			</db:select>
+			<validation:is-true doc:name="Is true" doc:id="171c7eba-7bb8-49ce-9cc6-b581d1f3d2ac" expression="#[sizeOf(vars.productsList) == sizeOf(payload.products) and not isEmpty(payload.products)]"/>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="4e38c442-f9d7-49fd-88e1-42059550c18c" type="VALIDATION:INVALID_BOOLEAN">
+					<logger level="INFO" doc:name="PAYLOAD AND QUERY" doc:id="634afdf3-406a-4bbc-87cb-cf064049c58f" message='#[output application/java ---&#10;"\n[" ++ vars.correlationId as String ++ "] \n" ++ write(&#10;{&#10;	"payload": payload,&#10;	"queryResult": vars.productsList&#10;}, "application/json")]' />
+					<set-payload value='#[output application/json --- {"error": "One or more products not found"}]' doc:name="Set Payload" doc:id="8d845f3e-c7b2-49bf-9dbd-8636c60d8dac" />
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="to orderData" doc:id="b55a25fb-b7ce-4c05-9276-b887b701eecc" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="orderData" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.products map (product) -> {
+    productId: product.productId,
+    quantity: product.quantity,
+    unitPrice: (vars.productsList filter (item) -> item.productId == product.productId)[0].unitPrice
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<try doc:name="Try_INSERT_transactional" doc:id="eaf39446-dc68-4250-b4a7-02e91c0b8738" transactionalAction="ALWAYS_BEGIN">
+			<db:insert doc:name="ORDER" doc:id="b666b4ab-b67b-428c-afe3-69aa8799959b" config-ref="Database_Config" target="insertOrder">
+			<db:sql><![CDATA[INSERT INTO orders (status, order_date, customer_id)
+VALUES ("processing", NOW(), :customerId);]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	"customerId": payload.customerId as Number
+}]]]></db:input-parameters>
+		</db:insert>
+			<db:select doc:name="LAST_ORDER_ID" doc:id="b99c6dfd-36e7-4a67-aa6f-9158bbdce912" config-ref="Database_Config" target="lastOrderId">
+				<db:sql ><![CDATA[SELECT LAST_INSERT_ID() AS orderId;]]></db:sql>
+			</db:select>
+			<foreach doc:name="For Each" doc:id="93b781e5-97d1-4664-969c-7170e22e010b" collection="#[vars.orderData]">
+				<db:insert doc:name="ORDER_DETAILS" doc:id="78496e54-bca6-40ab-9c29-bbb6be261204" config-ref="Database_Config" target="orderDetails">
+			<db:sql><![CDATA[INSERT INTO order_details (order_id, product_id, quantity, unit_price)
+VALUES (:orderId, :productId, :quantity, :unitPrice);
+]]></db:sql>
+				<db:input-parameters><![CDATA[#[{
+	orderId: vars.lastOrderId[0].orderId,
+	productId: payload.productId,
+	quantity: payload.quantity,
+	unitPrice: payload.unitPrice
+}]]]></db:input-parameters>
+		</db:insert>
+			</foreach>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="27842e77-ec4a-4fcd-9c0b-acfe2cba8de8" type="DB:*">
+					<logger level="INFO" doc:name="PAYLOAD" doc:id="1fe2d1ac-ad93-4718-adf5-f9b0664c3b43" message='#[output application/java --- "\n[" ++ vars.correlationId as String ++ "]\n" ++ write(payload, "application/json")]'/>
+					<set-payload value='#[output application/json ---&#10;{&#10;	"error": "Failed to create order. Please try again."&#10;}]' doc:name="Set Payload" doc:id="3afea813-3a7e-463d-9fdb-d66e5ac62eb7" />
+				</on-error-propagate>
+			</error-handler>
+		
+</try>
+		<set-variable doc:name="orderId" doc:id="3bd85c87-6edf-4347-9caf-d6a1ae4c6f54" variableName="orderId" value="#[vars.lastOrderId[0].orderId]"/>
+		<flow-ref doc:name="GET ORDER BY ID" doc:id="5d91be28-19c2-4108-b9e9-7f23fca322a9" name="LOGIC_GET-ORDERS-BY-ID"/>
+	
+</flow>
+	<flow name="LOGIC_PATCH-ORDER-STATUS" doc:id="56a02fc8-cf35-44ca-8ad1-a8f28807610d" >
+		<set-variable value="#[payload.status]" doc:name="newStatus" doc:id="ce729f50-c5dd-4eb3-9010-0011528afa8e" variableName="newStatus"/>
+		<db:update doc:name="ORDER_STATUS" doc:id="6eca406c-b1b6-436c-9f75-db2df5f2bd6e" config-ref="Database_Config" target="updatedOrder">
+			<db:sql ><![CDATA[UPDATE orders
+SET status = :orderStatus
+WHERE (id = :orderId);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	orderStatus: vars.newStatus as String,
+	orderId: attributes.uriParams.id as Number
+}]]]></db:input-parameters>
+		</db:update>
+		<choice doc:name="Choice" doc:id="b60efe5b-14c2-47d0-8de1-5d91cf7630d7" >
+			<when expression="#[vars.updatedOrder.affectedRows == 0]">
+				<raise-error doc:name="Raise error" doc:id="95ddec42-7dd6-48b6-a37a-b28d5a15d73a" type="CUSTOM:BAD_ID" description="Id not found"/>
+			</when>
+			<otherwise>
+				<set-variable value="#[{'Connection': 'close'}]" doc:name="connection close" doc:id="ff59c025-5628-4247-8602-2b9d1f3f4dc0" variableName="outboundHeaders" />
+				<set-variable value="204" doc:name="httpStatus" doc:id="24659c8c-6d19-46ae-95d3-e0512b202206" variableName="httpStatus"/>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="843d830b-acf3-4b97-8a59-b7287b2a7f66" type="CUSTOM:BAD_ID" >
+				<logger level="INFO" doc:name="ERROR_DATA" doc:id="bbf6ec37-bda6-482d-a089-243911efd415" message='#[output application/java ---&#10;"\n[" ++ vars.correlationId as String ++ "] \n" ++ write(&#10;{&#10;	"error": error.description,&#10;	"requestedId": attributes.uriParams.id as Number&#10;}, "application/json")]' />
+				<set-payload value='#[output application/json --- &#10;{&#10;	"error": error.description,&#10;	"requestedId": attributes.uriParams.id as Number&#10;}]' doc:name="Set Payload" doc:id="59c5823d-fbb4-4913-8fdc-c9c275ea0aca" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+
+</mule>

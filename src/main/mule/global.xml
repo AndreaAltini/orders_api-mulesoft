@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation=" http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd  http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+    <http:listener-config name="orders_api-httpListenerConfig">
+        <http:listener-connection host="${http.host}" port="${http.port}" />
+    </http:listener-config>
+    <apikit:config name="orders_api-config" api="resource::84213f15-cd28-4a60-aaef-dbf1e899c763:orders_api:1.0.5:raml:zip:orders_api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <global-property doc:name="Global Property" doc:id="4ee93587-c8c7-41e4-9628-ab4af5d412d3" name="env" value="local" />
+    <configuration-properties doc:name="Configuration properties" doc:id="ae3654b5-b760-4e2b-b3e2-6b7bf7d9aec9" file="${env}.properties" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="ae55e69a-15a4-402c-b53a-dedfe4fa0e52">
+        <db:my-sql-connection host="${db.host}" port="${db.port}" user="${secure::db.user}" password="${secure::db.pw}" database="${db.db}" />
+    </db:config>
+    <secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="99f4feb4-b24a-49ab-b208-e8c479b0ba3e" file="${env}.secure.properties" key="${secure.key}">
+        <secure-properties:encrypt algorithm="Blowfish" />
+    </secure-properties:config>
+</mule>

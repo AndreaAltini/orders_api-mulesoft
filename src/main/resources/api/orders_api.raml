@@ -1,0 +1,143 @@
+#%RAML 1.0
+title: orders_api
+mediaType: application/json
+
+types:
+  Customer:
+    type: object
+    properties:
+      id: integer
+      firstName: string
+      lastName: string
+      email: 
+        type: string
+        pattern: '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$'
+    example: !include /examples/customer.json
+
+  Status:
+    type: string
+    enum: ["processing","confirmed","shipped","delivered"]
+    example: "shipped"
+
+  Order:
+    type: object
+    properties:
+      id: integer
+      status: Status
+      orderDate: datetime
+      customer: Customer
+      products:
+        type: array
+        items: 
+          type: object
+          properties:
+            id: integer
+            name: string
+            quantity:
+              type: integer
+              minimum: 0
+            unitPrice: number
+      totalAmount: number
+    example: !include /examples/order.json
+
+  OrderPost:
+    type: object
+    properties:
+      customerId: integer
+      products:
+        type: array
+        items:
+          type: object
+          properties:
+            productId: integer
+            quantity: integer
+    example: !include /examples/orderPost.json
+
+/orders:
+  get:
+    description: Returns the list of orders
+    
+    queryParameters:
+      limit:
+        type: integer
+        default: 10
+        minimum: 1
+        maximum: 100
+        required: false
+        description: Maximum number of orders to return
+      offset:
+        type: integer
+        default: 0
+        minimum: 0
+        required: false
+        description: Number of orders to skip
+      cname:
+        type: string
+        required: false
+        description: Filter results by customer name
+      status:
+        type: Status
+        required: false
+
+    responses:
+      200:
+        body:
+          application/json:
+            type: object
+            properties:
+              orders: Order[]
+              pagination:
+                type: object
+                properties:
+                  totalOrders: integer
+                  currentPage: integer
+                  totalPages: integer
+                  limit: integer
+            example: !include /examples/ordersList.json
+
+  post:
+    description: Creates a new order
+    body:
+      application/json:
+        type: OrderPost
+        example: !include /examples/orderPost.json
+    responses:
+      201:
+        body:
+          application/json:
+            type: Order
+            example: !include /examples/order.json
+  
+
+  /{id}:   
+    uriParameters:
+      id: integer
+
+    get:
+      description: Returns the details of a specific order
+      responses:
+        200:
+          body:
+            application/json:
+              type: Order
+              example: !include /examples/order.json
+
+        404:
+          body:
+            application/json:
+              type: string
+              example: "Sorry, we couldn't find this order id. Please check that it's correct and try again."
+
+
+    /status:
+      patch:
+        description: Updates the status of a specific order
+        body:
+          application/json:
+            type: object
+            properties:
+              status: Status
+            example:
+              status: "shipped"
+        responses:
+          204: {}

@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+      xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:db="http://www.mulesoft.org/schema/mule/db"
+      xsi:schemaLocation="
+          http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+          http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+          http://www.mulesoft.org/schema/mule/munit-tools http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+          http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+    
+    <munit:config name="orders-api-test-suite.xml"/>
+
+    <!-- ========================================= -->
+    <!-- TEST 1: GET /orders - Success            -->
+    <!-- ========================================= -->
+    <munit:test name="get-orders-success" description="Test GET /orders with valid parameters">
+        <munit:behavior>
+            <munit:set-event doc:name="queryParams" doc:id="971e5eaa-73a6-4591-a7bb-78e9fbc42ffa">
+				<munit:attributes value="#[{&#10;	queryParams: {&#10;		limit: 10,&#10;		offset: 0,&#10;		cname: null,&#10;		status: null&#10;	}&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="725da425-801a-47c0-b473-8361ff9cda7e" variableName="correlationId"/>
+            
+            <!-- Mock prima query DB (lista ordini) -->
+			<munit-tools:mock-when processor="db:select" doc:name="Mock ORDERS">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDERS"/>
+                </munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value='#[[{"order_id": 1, "status": "shipped", "order_date": "2025-09-01T10:30:00Z", "customer_id": 101, "customer_first_name": "Mario", "customer_last_name": "Rossi", "customer_email": "mario.rossi@example.com", "product_id": 1, "quantity": 1, "unit_price": 749.99, "product_name": "HP Pavilion Laptop", "category": "Computers", "product_unit_price": 749.99}]]' />
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+            
+            <!-- Mock seconda query DB (count totale) -->
+            <munit-tools:mock-when processor="db:select" doc:name="Mock TOTAL_ORDERS">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="TOTAL_ORDERS"/>
+                </munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:variables >
+						<munit-tools:variable key="totalOrders" value="#[[{'total_orders': 100}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+				
+</munit-tools:mock-when>
+        </munit:behavior>
+        
+        <munit:execution>
+            <flow-ref name="get:\orders:orders_api-config" doc:name="GET ORDERS" doc:id="a4f24614-3dd3-432f-9b81-d352372a8dbc"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <munit-tools:assert-that 
+                expression="#[payload]" 
+                is="#[MunitTools::notNullValue()]"
+                doc:name="payload is not null" message="Payload shouldn't be null"/>
+            
+            <munit-tools:assert-that 
+                expression="#[payload.orders]" 
+                is="#[MunitTools::notNullValue()]"
+                message="Orders array shouldn't be null"
+                doc:name="orders is not null"/>
+            
+            <munit-tools:assert-equals 
+                actual="#[payload.pagination.totalOrders]" 
+                expected="#[100]"
+                message="Total orders should be 100"
+                doc:name="totalOrders is 100"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ========================================= -->
+    <!-- TEST 2: GET /orders - Empty Result       -->
+    <!-- ========================================= -->
+    <munit:test name="get-orders-empty" description="Test GET /orders when no orders found">
+        <munit:behavior>
+            <munit:set-event doc:name="queryParams" doc:id="689d5ad7-4b01-4194-b6f3-f572fdadfefe">
+				<munit:attributes value="#[{&#10;	queryParams: &#10;		{&#10;			limit: 10,&#10;			offset: 0&#10;		}&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="ad71198f-66bc-468c-b785-f6dc72303352" variableName="correlationId" />
+            
+            <munit-tools:mock-when processor="db:select" doc:name="Mock ORDERS empty">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDERS"/>
+                </munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:payload value="#[[]]" />
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+            
+            <munit-tools:mock-when processor="db:select" doc:name="Mock TOTAL_ORDERS zero">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="TOTAL_ORDERS"/>
+                </munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:variables >
+						<munit-tools:variable key="totalOrders" value="#[[{'total_orders': 0}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+        
+</munit:behavior>
+        
+        <munit:execution>
+            <flow-ref name="get:\orders:orders_api-config" doc:name="GET ORDERS" doc:id="7cdfe081-c9a3-47f0-b3d0-18991de1afd7"/>
+        </munit:execution>
+        
+        <munit:validation>
+            <munit-tools:assert-equals 
+                actual="#[sizeOf(payload.orders)]" 
+                expected="#[0]"
+                message="Orders array should be empty"
+                doc:name="orders is empty"/>
+            
+            <munit-tools:assert-equals 
+                actual="#[payload.pagination.totalOrders]" 
+                expected="#[0]"
+                message="Total orders should be 0"
+                doc:name="totalOrders is zero"/>
+        </munit:validation>
+    </munit:test>
+
+    <!-- ========================================= -->
+    <!-- TEST 3: GET /orders/{id} - Success       -->
+    <!-- ========================================= -->
+
+    <!-- ========================================= -->
+    <!-- TEST 4: GET /orders/{id} - Not Found     -->
+    <!-- ========================================= -->
+
+    <!-- ========================================= -->
+    <!-- TEST 5: POST /orders - Product Not Found -->
+    <!-- ========================================= -->
+	<munit:test name="get-orders-empty-error-db" doc:id="a6c90b6f-1825-43fe-b05c-3307cb504979" description="Test GET /orders when no orders found" expectedErrorType="DB:CONNECTIVITY">
+		<munit:behavior >
+			<munit:set-event doc:name="queryParams" doc:id="0b6f0b36-5e05-4302-bac0-5e7056c38e86" >
+				<munit:attributes value="#[{&#10;	queryParams: {&#10;		limit: 10,&#10;		offset: 0&#10;	}&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="25f292e4-0ab2-42c3-a844-8570357fdeb8" variableName="correlationId" />
+			<munit-tools:mock-when doc:name="Mock ORDERS error" doc:id="91bb3d67-7a52-4153-8e38-dc428b2f364f" processor="db:select" >
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="ORDERS" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return >
+					<munit-tools:error typeId="DB:CONNECTIVITY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="GET ORDERS" doc:id="11cf1687-3c6d-454f-91e8-7c675b6b0e14" name="get:\orders:orders_api-config" />
+		</munit:execution>
+	</munit:test>
+	<munit:test name="get-order-by-id-success" description="Test GET /orders/{id} with valid ID">
+        <munit:behavior>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="8a8f587d-5985-4bd5-8e1d-d318183b6308" variableName="correlationId" />
+			<set-variable value="#[123]" variableName="orderId" doc:name="orderId" />
+            
+            <munit-tools:mock-when processor="db:select" doc:name="Mock ORDER_BY_ID">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDER BY ID" />
+                </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="orderById" value="#[[{'order_id': 123, 'status': 'shipped', 'order_date': '2025-09-01T10:30:00', 'customer_id': 101, 'customer_first_name': 'Mario', 'customer_last_name': 'Rossi', 'customer_email': 'mario@example.com', 'product_id': 1, 'quantity': 2, 'unit_price': 99.90, 'product_name': 'Laptop', 'category': 'Electronics', 'product_unit_price': 99.90}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+        
+</munit:behavior>
+        
+        <munit:execution>
+            <flow-ref name="get:\orders\(id):orders_api-config" doc:name="GET ORDER_BY_ID" doc:id="c838ca99-0a4d-405d-b414-577321e56c92" />
+        </munit:execution>
+        
+        <munit:validation>
+            <munit-tools:assert-that expression="#[payload.id]" is="#[MunitTools::equalTo(123)]" message="Order ID should be 123" doc:name="id is 123" />
+            
+            <munit-tools:assert-that expression="#[payload.status]" is="#[MunitTools::equalTo('shipped')]" message="Order status should be shipped" doc:name="status is shipped" />
+        </munit:validation>
+    </munit:test>
+	<munit:test name="get-order-by-id-not-found" description="Test GET /orders/{id} with non-existent ID" expectedErrorType="CUSTOM:BAD_ID">
+        <munit:behavior>
+			<munit:set-event doc:name="SET uriParams ID" doc:id="9c71b681-e2d9-4610-8fb2-1f8426afa6c8">
+				<munit:attributes value="#[{uriParams: {id: 999}}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="f8a37651-1fd7-4249-991f-f151ec8fa270" variableName="correlationId" />
+			<set-variable value="#[999]" variableName="orderId" doc:name="Invalid orderId" />
+            
+            <munit-tools:mock-when processor="db:select" doc:name="Mock ORDER_BY_ID empty">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDER BY ID" />
+                </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="orderById" value="#[[]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+        
+</munit:behavior>
+        
+        <munit:execution>
+			<flow-ref name="get:\orders\(id):orders_api-config" doc:name="GET ORDER_BY_ID" doc:id="18eb0394-7f88-4e45-b9e8-2731965c371e" />
+        </munit:execution>
+    
+</munit:test>
+	<munit:test name="get-order-by-id-error-db" doc:id="a10d565d-bde3-493b-bcf2-46a91b0077c4" description="Test GET /orders/{id} with non-existent ID" expectedErrorType="DB:CONNECTIVITY">
+		<munit:behavior>
+			<munit:set-event doc:name="SET uriParams ID" doc:id="e3873d17-d09e-4da2-b6be-865be8fae82e">
+				<munit:attributes value="#[{uriParams: {id: 1}}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="b1ec9e28-eb65-4235-a44c-28b635e90b4d" variableName="correlationId" />
+			<set-variable value="#[1]" doc:name="orderId" doc:id="e5a2f5b8-bec1-4ac8-b294-4877dadcdfe9" variableName="orderId" />
+			<munit-tools:mock-when doc:name="Mock ORDER_BY_ID ERROR" doc:id="8084b449-34d6-4198-9393-4101a94156c8" processor="db:select">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute whereValue="ORDER BY ID" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:error typeId="DB:CONNECTIVITY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<flow-ref doc:name="GET ORDER_BY_ID" doc:id="d81fe5d4-1415-40ca-98b6-0fc8ad669c60" name="get:\orders\(id):orders_api-config" />
+		</munit:execution>
+	</munit:test>
+	<munit:test name="post-order-success" description="Test POST /orders with valid data">
+
+    <munit:behavior>
+        <!-- Payload di input -->
+        <munit:set-event doc:name="post request Body" doc:id="afc0cefc-10cb-4efe-9690-52ae1d4566cc" >
+				<munit:payload value="#[{&#10;	customerId: 1,&#10;	products: [&#10;		{productId: 1, quantity: 2},&#10;		{productId: 2, quantity: 1}&#10;	]&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="d591630c-6341-4f69-8018-d2dad9021878" variableName="correlationId" />
+
+        <!-- Mock validazione cliente -->
+        <munit-tools:mock-when processor="db:select" doc:name="Mock CUSTOMER_ID">
+            <munit-tools:with-attributes>
+                <munit-tools:with-attribute attributeName="doc:name" whereValue="CUSTOMER_ID" />
+            </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="clientID" value="#[[{'id': 1}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+
+        <!-- Mock validazione prodotti -->
+        <munit-tools:mock-when processor="db:select" doc:name="Mock PRODUCT_ID">
+            <munit-tools:with-attributes>
+                <munit-tools:with-attribute attributeName="doc:name" whereValue="PRODUCT _ID" />
+            </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="productsList" value="#[[{'productId': 1, 'unitPrice': 749.99}, {'productId': 2, 'unitPrice': 99.90}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+
+        <!-- Mock insert ordine -->
+        <munit-tools:mock-when processor="db:insert" doc:name="Mock INSERT ORDER">
+            <munit-tools:with-attributes>
+                <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDER" />
+            </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="insertOrder" value="#[{'affectedRows': 1}]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+
+        <!-- Mock last order ID -->
+        <munit-tools:mock-when processor="db:select" doc:name="Mock LAST_ORDER_ID">
+            <munit-tools:with-attributes>
+                <munit-tools:with-attribute attributeName="doc:name" whereValue="LAST_ORDER_ID" />
+            </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="lastOrderId" value="#[[{'orderId': 523}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+
+        <!-- Mock insert order details -->
+        <munit-tools:mock-when processor="db:insert" doc:name="Mock INSERT ORDER_DETAILS">
+            <munit-tools:with-attributes>
+                <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDER_DETAILS" />
+            </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="orderDetails" value="#[{generatedKeys: [{ ID: 652 }]}]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+
+        <!-- Mock GET order by ID per la risposta -->
+        <munit-tools:mock-when processor="flow-ref" doc:name="Flow_Ref GET_ORDERS_ID">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="GET ORDER BY ID" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:payload value='#[{&#10;  "id": 523,&#10;  "status": "processing",&#10;  "orderDate": "2025-09-01T10:30:00",&#10;  "customer": {&#10;    "id": 1,&#10;    "firstName": "Andrea",&#10;    "lastName": "Geppetto",&#10;    "email": "andrea.geppetto@gmail.com"&#10;  },&#10;  "products": [&#10;    {&#10;      "id": 1,&#10;      "name": "HP Pavilion 15 Laptop",&#10;      "quantity": 2,&#10;      "unitPrice": 749.99&#10;    },&#10;    {&#10;      "id": 2,&#10;      "name": "Logitech MX Master 3 Mouse",&#10;      "quantity": 1,&#10;      "unitPrice": 99.9&#10;    }&#10;  ],&#10;  "totalAmount": 1599.88&#10;}]' />
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+    
+</munit:behavior>
+
+    <munit:execution>
+        <flow-ref name="post:\orders:application\json:orders_api-config" doc:id="1dca831c-9681-4c8d-a78e-5ec58702b1bd" doc:name="POST ORDER"/>
+    </munit:execution>
+
+    <munit:validation>
+        <!-- Verifica che sia stato creato un ordine -->
+        <munit-tools:assert-that expression="#[payload.id]" is="#[MunitTools::equalTo(523)]" message="Order ID should be 523" doc:name="id is 523"/>
+
+        <munit-tools:assert-that expression="#[payload.status]" is="#[MunitTools::equalTo('processing')]" message="Order status should be processing" doc:name="status is processing"/>
+
+        <munit-tools:assert-that expression="#[payload.totalAmount]" is="#[MunitTools::notNullValue()]" message="Total amount should be calculated" doc:name="totalAmount is not null"/>
+    </munit:validation>
+
+</munit:test>
+	<munit:test name="post-order-customer-not-found" doc:id="ef347bcc-39a4-4689-91c5-bae82fbef6cb" description="Test POST /orders with non-existent product" expectedErrorType="VALIDATION:EMPTY_COLLECTION">
+		<munit:behavior>
+			<munit:set-event doc:name="Post Request invalid Body" doc:id="d055d545-3b7b-42b0-98b6-5e0d234fd9c7" >
+				<munit:payload value="#[{&#10;	customerId: 1,&#10;	products: [&#10;		{productId: 999, quantity: 2}&#10;	]&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="371b6bcc-5e37-4cf7-8c14-358e1f29b943" variableName="correlationId" />
+			<munit-tools:mock-when doc:name="Mock CUSTOMER_ID not_found" doc:id="3432bb44-cca4-4ffa-a456-89d1f0a6ccbd" processor="db:select">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute whereValue="CUSTOMER_ID" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="clientID" value="#[[]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<flow-ref doc:name="POST ORDER" doc:id="59b5abf5-cd8c-4bd8-9515-d698a63916ff" name="post:\orders:application\json:orders_api-config" />
+		</munit:execution>
+	</munit:test>
+	<munit:test name="post-order-product-not-found" description="Test POST /orders with non-existent product" expectedErrorType="VALIDATION:INVALID_BOOLEAN">
+        <munit:behavior>
+            <munit:set-event doc:name="Post Request invalid Body" doc:id="94d69097-9e83-4feb-b8ad-16a6c79d825c" >
+				<munit:payload value="#[{&#10;	customerId: 101,&#10;	products: [&#10;		{productId: 1, quantity: 2}&#10;	]&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="5aff04cd-9266-44d9-8711-01172589ef2b" variableName="correlationId" />
+            
+            <!-- Mock cliente trovato -->
+            <munit-tools:mock-when processor="db:select" doc:name="Mock CUSTOMER_ID">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="CUSTOMER_ID" />
+                </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="clientID" value="#[[{'id': 1}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+            
+            <!-- Mock prodotto NON trovato -->
+            <munit-tools:mock-when processor="db:select" doc:name="Mock PRODUCT_ID not found">
+                <munit-tools:with-attributes>
+                    <munit-tools:with-attribute attributeName="doc:name" whereValue="PRODUCT _ID" />
+                </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="productsList" value="#[[]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+            
+</munit-tools:mock-when>
+        
+</munit:behavior>
+        
+        <munit:execution>
+            <flow-ref name="post:\orders:application\json:orders_api-config" doc:name="POST ORDER" doc:id="ae352377-b0f4-4cf1-b209-620515d3c3ed" />
+        </munit:execution>
+    </munit:test>
+	<munit:test name="post-order-error-insert" doc:id="da56cae5-aace-4827-bc86-db0f81af370b" description="Test POST /orders with valid data" expectedErrorType="DB:CONNECTIVITY">
+		<munit:behavior>
+			<munit:set-event doc:name="Post Request Body" doc:id="79a4b0b4-0add-43c8-8144-80ffa365f66b" >
+				<munit:payload value="#[{&#10;	customerId: 1,&#10;	products: [&#10;		{productId: 1, quantity: 2},&#10;		{productId: 2, quantity: 1}&#10;	]&#10;}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="fc3256ba-6aff-43b5-b89b-cd8d2aceba1b" variableName="correlationId" />
+			<munit-tools:mock-when doc:name="Mock CUSTOMER_ID" doc:id="732364c8-a450-4411-8196-6c5ae2b13796" processor="db:select">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute whereValue="CUSTOMER_ID" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="clientID" value="#[[{'id': 1}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="Mock PRODUCT_ID" doc:id="7e77ac69-c80e-4832-8b30-314cd9687ce3" processor="db:select">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute whereValue="PRODUCT _ID" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="productsList" value="#[[{'productId': 1, 'unitPrice': 749.99}, {'productId': 2, 'unitPrice': 99.90}]]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+			<munit-tools:mock-when doc:name="Mock INSERT ORDER" doc:id="24acf22e-e44f-4c04-a930-6f7339c53dd9" processor="db:insert">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute whereValue="ORDER" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:error typeId="DB:CONNECTIVITY" />
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<flow-ref doc:name="POST ORDER" doc:id="4303fb1d-ea9d-4213-b7fa-15a3ff52f679" name="post:\orders:application\json:orders_api-config" />
+		</munit:execution>
+	</munit:test>
+	<munit:test name="patch-order-status-success" description="Test PATCH /orders/{id}/status with valid data">
+
+    <munit:behavior>
+			<munit:set-event doc:name="Patch Request Body" doc:id="d64c813e-652e-4f75-972f-c6a9539325ec">
+				<munit:payload value="#[{status: 'shipped'}]" />
+				<munit:attributes value="#[{uriParams:	{id: 1}}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="e536afec-151f-46d6-82ad-cad268434105" variableName="correlationId" />
+			<set-variable value="#['shipped']" variableName="newStatus" doc:name="newStatus"/>
+
+        <munit-tools:mock-when processor="db:update" doc:name="UPDATE ORDER_STATUS">
+            <munit-tools:with-attributes>
+                <munit-tools:with-attribute attributeName="doc:name" whereValue="ORDER_STATUS" />
+            </munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="updatedOrder" value="#[{'affectedRows': 1}]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+        
+</munit-tools:mock-when>
+    
+</munit:behavior>
+
+    <munit:execution>
+        <flow-ref name="patch:\orders\(id)\status:application\json:orders_api-config" doc:id="79a2276b-1cab-40c1-a743-2e9e3bfaedad" doc:name="PATCH ORDER_STATUS"/>
+    </munit:execution>
+
+    <munit:validation>
+        <munit-tools:assert-that expression="#[vars.outboundHeaders.Connection default 'none']" is="#[MunitTools::equalTo('close')]" message="Connection header should be set to close" doc:name="Connection is close"/>
+    </munit:validation>
+
+</munit:test>
+	<munit:test name="patch-order-status-id-not-found" doc:id="0ef5e89f-9fa6-4b3a-9e42-a68f6016297c" description="Test PATCH /orders/{id}/status with valid data" expectedErrorType="CUSTOM:BAD_ID">
+		<munit:behavior>
+			<munit:set-event doc:name="Patch Request Body" doc:id="97545e10-1d6f-4183-81ec-edac70beb156">
+				<munit:payload value="#[{status: 'shipped'}]" />
+				<munit:attributes value="#[{uriParams:	{id: 999}}]" />
+			</munit:set-event>
+			<set-variable value="#[uuid()]" doc:name="correlationId" doc:id="7ce34098-9166-415b-8106-5a15e1de19d8" variableName="correlationId" />
+			<set-variable value="#['shipped']" doc:name="newStatus" doc:id="5597b58d-14a9-40ac-8207-6e985693a099" variableName="newStatus" />
+			<munit-tools:mock-when doc:name="Mock UPDATE ORDER_STATUS" doc:id="26b1a872-c0a9-430f-af74-4eb141e515f2" processor="db:update">
+				<munit-tools:with-attributes>
+					<munit-tools:with-attribute whereValue="ORDER_STATUS" attributeName="doc:name" />
+				</munit-tools:with-attributes>
+				<munit-tools:then-return>
+					<munit-tools:variables>
+						<munit-tools:variable key="updatedOrder" value="#[{'affectedRows': 0}]" />
+					</munit-tools:variables>
+				</munit-tools:then-return>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution>
+			<flow-ref doc:name="PATCH ORDER_STATUS" doc:id="db550615-2ccd-4d4d-88a0-e72a136b1cd9" name="patch:\orders\(id)\status:application\json:orders_api-config" />
+		</munit:execution>
+	</munit:test>
+	<munit:test name="orders-api-main-correlationId-success" doc:id="33ede7ee-730f-49ee-825d-235ea790d26c" >
+		<munit:behavior >
+			<munit:set-event doc:name="Get Orders Request" doc:id="8ea441f6-5a58-49d1-860e-c539fad9f4cb" >
+				<munit:attributes value='#[{&#10;	requestPath: "/orders",&#10;    method: "GET",&#10;    listenerPath: "/api/*",&#10;    queryParams: {&#10;    	limit: 10,&#10;    	offset: 0,&#10;    	cname: null,&#10;    	status: null&#10;    },&#10;    headers: {&#10;      accept: "application/json"&#10;    }&#10;}]' />
+			</munit:set-event>
+			<munit-tools:mock-when doc:name="APIkit Router" doc:id="75ad5cd8-e294-451b-90ab-05508928c061" processor="apikit:router">
+				<munit-tools:with-attributes >
+					<munit-tools:with-attribute whereValue="orders_api-config" attributeName="config-ref" />
+				</munit-tools:with-attributes>
+			</munit-tools:mock-when>
+		</munit:behavior>
+		<munit:execution >
+			<flow-ref doc:name="API KIT ROUTER" doc:id="ff091c95-6b6a-4516-9516-f31220eae6e1" name="orders_api-main"/>
+		</munit:execution>
+		<munit:validation >
+			<munit-tools:assert-that doc:name="correlationId is not null" doc:id="78fd757d-589d-454c-8b14-1df017d72c26" expression="#[vars.correlationId]" is="#[MunitTools::notNullValue()]" message="correlationId shouldn't be null"/>
+		</munit:validation>
+	</munit:test>
+
+
+
+</mule>

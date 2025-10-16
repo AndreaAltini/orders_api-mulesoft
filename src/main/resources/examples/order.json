@@ -1,0 +1,26 @@
+{
+  "id": 1,
+  "status": "shipped",
+  "orderDate": "2025-09-01T10:30:00Z",
+  "customer": {
+    "id": 101,
+    "firstName": "Mario",
+    "lastName": "Rossi",
+    "email": "mario.rossi@example.com"
+  },
+  "products": [
+    {
+      "id": 2,
+      "name": "Logitech MX Master 3 Mouse",
+      "quantity": 2,
+      "unitPrice": 99.9
+    },
+    {
+      "id": 1,
+      "name": "MacBook Pro 16\"",
+      "quantity": 1,
+      "unitPrice": 749.99
+    }
+  ],
+  "totalAmount": 849.89
+}
