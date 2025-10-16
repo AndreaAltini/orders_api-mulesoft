@@ -14,7 +14,6 @@ Educational project for **MuleSoft Developer Certification** preparation.
 - [Features](#features)
 - [Technologies](#technologies)
 - [Project Setup](#project-setup)
-- [Configuration](#configuration)
 - [Database](#database)
 - [API Endpoints](#api-endpoints)
 - [Testing](#testing)
@@ -31,7 +30,7 @@ Educational project for **MuleSoft Developer Certification** preparation.
 - Logging with Correlation ID
 - Secure properties (encrypted credentials)
 - Complete MUnit tests
-- RAML-first design
+- Design-first approach
 
 ---
 
@@ -53,46 +52,20 @@ Educational project for **MuleSoft Developer Certification** preparation.
 ### 2. Import into Anypoint Studio
 
 ### 3. Database Setup
-import `database/setup.sql` into your MySQL client.
+Import `database/setup.sql` into your MySQL client.
 
 ### 4. Configure Properties
 
-#### **Option A: Plain credentials (Fast Option)**
+This project uses `.properties` and `.secure.properties` files to externalize configuration values — such as database credentials — for demonstration and educational purposes.  
+However, for simplicity and faster setup, you can skip editing these files and directly update the database connection configuration in **Anypoint Studio**:
 
-Edit `global.xml` -> `global elements` -> `database config` with your database credential (user/pw).
+- Open **`global.xml`**
+- Go to **Global Elements → Database Config**
+- Replace the database username, password, and URL with your own values
 
-#### **Option B: Encrypted credentials**
+The project is configured to run with the **local environment** by default (`env=local`), so no additional environment setup is required.  
+Once updated, the application will be ready to run locally.
 
-1. Install the encryption tool:
-```bash
-# Download JAR from MuleSoft
-# https://docs.mulesoft.com/mule-runtime/latest/secure-configuration-properties
-```
-
-2. Encrypt your credentials:
-```bash
-java -cp secure-properties-tool.jar com.mulesoft.tools.SecurePropertiesTool string encrypt Blowfish CBC YourMuleSoftKey "myPassword"
-```
-
-3. Insert encrypted values in `local.secure.properties`
-
-4. Configure **secure.key** at runtime:
-   - `Run Configurations` → `Environment`
-   - Add new variable:
-     secure.key = **YourEncryptionKey**
-
----
-
-## Configuration
-
-### Environment Variables
-
-Configure these variables to run the project:
-
-| Variable | Description | Example |
-|-----------|-------------|---------|
-| `secure.key` | Decryption key | `MyMuleSoftKey` |
-| `env` | Environment (local/dev) | `local` |
 
 ---
 
@@ -216,8 +189,6 @@ Update order status.
 
 ## Testing
 
-If you are using the Encrypted Database Credential Option, be sure to set the secure.key variable at runtime even for the MUnit tests.
-
 ### Included Tests
 
 - GET /orders (success + empty results)
@@ -276,7 +247,7 @@ This project demonstrates:
 - MuleSoft flow architecture (separation of concerns)
 - Database integration with validation
 - Error handling strategies
-- Secure configuration management
+- Secure Configuration Management
 - Comprehensive unit testing with MUnit
 - Logging best practices (Correlation ID)
 - DataWeave transformations
@@ -285,4 +256,4 @@ This project demonstrates:
 
 ## License
 
-This project is released under the MIT License.
+This project is released under the [MIT License](LICENSE).
