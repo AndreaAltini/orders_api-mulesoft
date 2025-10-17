@@ -37,10 +37,12 @@ Educational project for **MuleSoft Developer Certification** preparation.
 
 ## Technologies
 
-- **MuleSoft Anypoint Studio** (version 7.22)
+- **MuleSoft Anypoint Studio** (7.22)
+- **Mule Runtime** (4.9.9)
 - **DataWeave 2.0**
-- **MUnit 3.6.x**
-- **MySQL 8.0+**
+- **MUnit** (3.6.1)
+- **MySQL** (5.7+)
+- **Secure Configuration Properties** (1.3.0)
 
 ---
 
