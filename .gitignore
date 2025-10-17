@@ -8,9 +8,6 @@
 .metadata/
 bin/
 tmp/
-.settings/
-.project
-.classpath
 .externalToolBuilders/
 *.launch
 .cproject
