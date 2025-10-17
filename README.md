@@ -47,6 +47,10 @@ Educational project for **MuleSoft Developer Certification** preparation.
 ## Project Setup
 
 ### 1. Import into Anypoint Studio
+This project includes an **Exchange dependency** for the API specification.  
+If the Exchange dependency fails to resolve, you can manually configure APIKit Router to use the local RAML file instead:
+`src/main/resources/api/orders_api.raml`
+
 
 ### 2. Database Setup
 Import `database/setup.sql` into your MySQL client.
