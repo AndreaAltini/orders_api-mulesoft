@@ -61,7 +61,7 @@ Educational project for **MuleSoft Developer Certification** preparation.
 4. If prompted to choose an import method, select **"Import existing Eclipse project"**
 
 
-##### --- PLEASE NOTE ---
+##### NOTE
 ```    
 This project includes an **Exchange dependency** for the API specification.  
 If the Exchange dependency fails to resolve, you can manually configure APIKit Router to use the local RAML file instead:
