@@ -63,7 +63,7 @@ Educational project for **MuleSoft Developer Certification** preparation.
 
 ##### NOTE
 ```    
-This project includes an **Exchange dependency** for the API specification.  
+This project includes an Exchange dependency for the API specification.  
 If the Exchange dependency fails to resolve, you can manually configure APIKit Router to use the local RAML file instead:
 src/main/resources/api/orders_api.raml
 ```
