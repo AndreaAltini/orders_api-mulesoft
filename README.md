@@ -49,13 +49,27 @@ Educational project for **MuleSoft Developer Certification** preparation.
 ## Project Setup
 
 ### 1. Import into Anypoint Studio
+#### Option A - Import from a local ZIP
+1. Download and unzip the repository,
+2. In **Anypoint Studio** go to: **`File` -> `Import` -> `Anypoint Studio` -> `Anypoiny Studio project from File System`**
+3. Select the root folder of the extracted project, then click Finish
+
+#### Option B - Import directly from Git:
+1. In Anypoint Studio, go to: **`File` -> `Import` -> `Git` -> `Projects from Git` -> `Clone URI`**
+2. Use this repository URL `https://github.com/AndreaAltini/orders_api-mulesoft.git`
+3. Keep all default settings and click Next until the import completes
+4. If prompted to choose an import method, select **"Import existing Eclipse project"**
+
+
+##### --- PLEASE NOTE ---
+```    
 This project includes an **Exchange dependency** for the API specification.  
 If the Exchange dependency fails to resolve, you can manually configure APIKit Router to use the local RAML file instead:
-`src/main/resources/api/orders_api.raml`
-
+src/main/resources/api/orders_api.raml
+```
 
 ### 2. Database Setup
-Import `database/setup.sql` into your MySQL client.
+Import `database/shop.sql` into your MySQL client.
 
 ### 3. Configure Properties
 
