@@ -61,15 +61,15 @@ Educational project for **MuleSoft Developer Certification** preparation.
 4. If prompted to choose an import method, select **"Import existing Eclipse project"**
 
 
-##### NOTE
-```    
-This project includes an Exchange dependency for the API specification.  
-If the Exchange dependency fails to resolve, you can manually configure APIKit Router to use the local RAML file instead:
-src/main/resources/api/orders_api.raml
-```
+> ##### NOTE   
+> This project includes an **Exchange dependency** for the API specification.  
+> If the Exchange dependency fails to resolve, you can manually configure APIKit Router to use the local RAML file instead:
+> `src/main/resources/api/orders_api.raml`
+
 
 ### 2. Database Setup
 Import `database/shop.sql` into your MySQL client.
+
 
 ### 3. Configure Properties
 
